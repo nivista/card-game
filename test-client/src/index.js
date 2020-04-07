@@ -24,8 +24,11 @@ document.getElementById('getGame').addEventListener('click', () => {
   fetch(url.resolve(SERVER_URL, 'game/' + document.getElementById('getGameID').value), {
     credentials: 'include',
   })
-    .then((res) => res.text())
-    .then((text) => (document.getElementById('getGameResponse').innerText = text))
+    .then((res) => {
+      if (res.status !== 204) return res.json();
+      else return 'Got 204';
+    })
+    .then((json) => (document.getElementById('getGameResponse').innerText = JSON.stringify(json)))
     .catch(console.log);
 });
 

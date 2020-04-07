@@ -2,7 +2,6 @@ const express = require('express');
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
 const mongoose = require('mongoose');
-const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const _ = require('lodash');
@@ -36,12 +35,11 @@ db.once('open', function() {
 */
 
 const corsOptions = {
-  origin: 'http://localhost:8080',
+  origin: ['http://localhost:8080', 'http://localhost:3001'],
   credentials: true,
 };
 
 app.use(cors(corsOptions)); //TODO: be more restrictive/ should i be putting headers here, not below
-app.use(cookieParser());
 app.use(bodyParser.text());
 app.use(bodyParser.json());
 app.use(
@@ -50,6 +48,9 @@ app.use(
     resave: true,
     saveUninitialized: true,
     secret: 'cookie monster',
+    cookie: {
+      httpOnly: false,
+    },
   })
 );
 app.use(function (req, res, next) {
@@ -73,6 +74,11 @@ app.use(function (req, res, next) {
 // leave game
 // join game
 // start game
+
+//also need
+//current user id
+//everyone's nicknames
+
 //get nickname
 app.get('/name', function (req, res) {
   res.send(req.user.nickname);
@@ -85,7 +91,7 @@ app.post('/game/new', function (req, res, next) {
   const game = new Game();
   game.players.push({ user: req.user._id });
   game.save();
-  res.send(game.gameID);
+  res.send(game._id);
 });
 
 app.post('/game/join', async function (req, res, next) {
@@ -94,6 +100,7 @@ app.post('/game/join', async function (req, res, next) {
   // check: is there enough space ?
   // check: are you already playing this game ?
   // NOTE: what about if you closed the tab or something, but you're already in the game
+
   const gameID = req.body;
   const game = await Game.findById(gameID);
   if (!game) {
@@ -102,11 +109,10 @@ app.post('/game/join', async function (req, res, next) {
   } else if (game.middlecard) {
     res.status(400).send('Game has started');
   } else {
-    await game.populate('players');
     const players = game.players;
     if (players.map((p) => p.user).includes(req.user._id)) {
       //important, this person is already playing
-      res.status(400).send("You're already playing this game");
+      res.status(204).send("You're already playing this game");
     } else if (players.length > 5) {
       res.status(400).send('Lobby is full');
     } else {
@@ -157,12 +163,26 @@ app.get('/game/:gameid', async function (req, res, next) {
   // who won the card
   // did the round end ?
   // did the game end -> game summary
-  const game = await Game.findById(req.params.gameid);
+  let game;
+  try {
+    game = await Game.findById(req.params.gameid);
+  } catch (e) {
+    console.log(e);
+    game = null;
+  }
+
   // TODO: this query is a good opportunity to test querying subdocs
-  const player = game.players.find((p) => p.user.equals(req.user._id)); // does players need to be populated
+  if (!game) {
+    res.status(400).send('Invalid Game ID');
+    return;
+  }
+  const populatePlayer = (i) => game.populate(`players.${i}.user`).execPopulate();
+  await Promise.all(game.players.map((p, i) => populatePlayer(i)));
+
+  const player = await game.players.find((p) => p.user.equals(req.user._id));
 
   if (player && !player.needsUpdate) {
-    res.send({ status: 'good to go' });
+    res.status(204).send();
   } else if (player) {
     player.needsUpdate = false;
     game.save();
