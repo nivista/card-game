@@ -24,6 +24,7 @@ function App() {
   useEffect(() => {
     if (gameID !== '') {
       const interval = setInterval(async () => {
+        console.log(gameID);
         const res = await fetch(url.resolve(SERVER_URL, `game/${gameID}`), {
           credentials: 'include',
         });
