@@ -11,7 +11,6 @@ const GameSchema = new Schema({
       user: { type: Schema.Types.ObjectId, ref: 'User' },
       hand: [{ type: Number, min: 1, max: 5 }],
       collected: [{ type: Number, min: 1, max: 5 }],
-      needsUpdate: { type: Boolean, default: true },
       points: { type: Number, default: 0 },
       played: { type: Number, min: 1, max: 5 },
       lastPlayed: { type: Number, min: 1, max: 5 },
@@ -22,11 +21,6 @@ const GameSchema = new Schema({
 GameSchema.virtual('gameID').get(function () {
   return genID(this._id);
 });
-
-//NOTE: doesn't save
-GameSchema.methods.resetNeedsUpdate = function (next) {
-  this.players.forEach((p) => (p.needsUpdate = true));
-};
 
 GameSchema.methods.toJSON = function () {
   const obj = this.toObject();

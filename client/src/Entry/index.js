@@ -17,24 +17,11 @@ export default function (props) {
     setCreatedGameID(gameID);
   };
 
-  const joinGame = async () => {
-    const res = await fetch(url.resolve(SERVER_URL, 'game/join/'), {
-      method: 'POST',
-      credentials: 'include',
-      body: gameIDForm,
-    });
-    if (res.status != 400) {
-      props.updateGameID(gameIDForm);
-    } else {
-      //TODO:: ERROR
-    }
-  };
-
   return (
     <>
       <p>Someone sent me an ID and I want to join a game! (Or rejoin)</p>
       <input value={gameIDForm} onChange={(e) => setGameIDForm(e.target.value)}></input>
-      <button onClick={joinGame}>Join Game</button>
+      <button onClick={() => props.joinGame(gameIDForm)}>Join Game</button>
       <p>Let's make a new game!</p>
       <button onClick={newGame}>Create Game</button>
       {createdGameID && (

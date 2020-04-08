@@ -1,17 +1,21 @@
 import React from 'react';
 import GameTableRow from './GameTableRow';
-
+import './style.css';
 export default function GameTable(props) {
   return (
     <table>
-      <tr>
-        <th>Nickname</th>
-        <th>Hand</th>
-        <th>Points</th>
-      </tr>
-      {props.players.map((p) => (
-        <GameTableRow {...p} />
-      ))}
+      <thead>
+        <tr>
+          <th>Nickname</th>
+          <th>Collection</th>
+          <th>Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {props.players.map((p) => (
+          <GameTableRow {...p} key={p._id} />
+        ))}
+      </tbody>
     </table>
   );
 }
