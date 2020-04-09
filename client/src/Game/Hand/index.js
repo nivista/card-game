@@ -1,10 +1,19 @@
-import React from 'react';
-import Card from '../../utils/Card';
+import React, { useState, useEffect } from 'react';
+import CARDS from '../../utils/cards';
 import url from 'url';
 import { SERVER_URL } from '../../utils/constants';
 import './style.css';
 export default function Hand(props) {
-  const style = {
+  const { player, gameID, battleStart } = props;
+  const { hand, played } = player;
+
+  const [selected, updateSelected] = useState(played);
+  console.log(played);
+  useEffect(() => {
+    updateSelected(played);
+  }, [played, battleStart]);
+
+  let containerStyle = {
     display: 'flex',
     justifyContent: 'center',
     position: 'absolute',
@@ -17,6 +26,7 @@ export default function Hand(props) {
 
   const getOnClick = (cardNumber) => {
     return async () => {
+      updateSelected(cardNumber);
       const res = await fetch(url.resolve(SERVER_URL, 'game/move'), {
         credentials: 'include',
         method: 'POST',
@@ -25,7 +35,7 @@ export default function Hand(props) {
           accept: 'application/JSON',
         },
         body: JSON.stringify({
-          gameID: props.gameID,
+          gameID,
           card: cardNumber,
         }),
       });
@@ -33,11 +43,14 @@ export default function Hand(props) {
     };
   };
   return (
-    <div style={style}>
-      {props.cards.map((card, i) => (
-        <Card key={i} onClick={getOnClick(card)} className="handCard">
-          {card}
-        </Card>
+    <div style={containerStyle}>
+      {hand.map((card, i) => (
+        <img
+          src={CARDS[card]}
+          key={i}
+          onClick={getOnClick(card)}
+          className={`handCard ${selected === card && 'active'}`}
+        />
       ))}
     </div>
   );

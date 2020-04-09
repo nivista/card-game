@@ -1,19 +1,23 @@
 import React from 'react';
-import Card from '../../../utils/Card.js';
+import CARDS from '../../../utils/cards.js';
 export default function GameTableRow(props) {
-  const style = {
+  const cardTDStyle = {
     display: 'flex',
     justifyContent: 'center',
-    height: '20px',
+    height: '40px',
     margin: '0 auto',
   };
-  console.log(props.collected);
+
+  const cardStyle = {
+    height: '100%',
+    margin: '0 1%',
+  };
   return (
     <tr>
       <td>{props.user.nickname}</td>
-      <td style={style}>
+      <td style={cardTDStyle}>
         {props.collected.map((card, i) => (
-          <Card key={i}>{card}</Card>
+          <img src={CARDS[card]} key={i} style={cardStyle} />
         ))}
       </td>
       <td>{props.points}</td>

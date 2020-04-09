@@ -1,6 +1,9 @@
+const moment = require('moment');
+
 const Game = require('./models/game');
 const CARDS = require('./utils/cards');
 
+const botsHavePlayed = { data: false };
 exports.get = async (req, res) => {
   let game;
   try {
@@ -21,8 +24,26 @@ exports.get = async (req, res) => {
   if (!player) {
     return res.status(400).send("You're not playing!");
   }
+  if (game.middlecard && !game.gameover && !botsHavePlayed.data) {
+    // battle has started
+    const timeElapsed = moment().diff(moment(game.battleStart), 'seconds');
+    const timeLeft = 10 - timeElapsed;
+    if (timeLeft < 0 && !game.players.every((p) => p.played)) {
+      //bots move
+      game.players
+        .filter((p) => !p.played)
+        .forEach((p) => (p.played = p.hand[Math.floor(Math.random() * p.hand.length)]));
 
-  res.send({ game, playerID: player._id });
+      performMove(game);
+
+      botsHavePlayed.data = true;
+      await game.save(() => {
+        botsHavePlayed.data = false; // why does this need to be in callback, not working like i'd expect
+      });
+    }
+  }
+
+  res.send({ game, player });
 };
 
 exports.new = async (req, res) => {
@@ -45,13 +66,8 @@ exports.start = async (req, res) => {
     return res.status(400).send("You're not the host");
   }
 
-  game.players.forEach((player) => {
-    for (let card = 1; card <= 5; card++) {
-      player.hand.push(card);
-    }
-  });
-  game.middlecard = Math.floor(Math.random() * 5 + 1);
-
+  startRound(game);
+  startBattle(game);
   game.save();
   res.send({ status: 'starting' });
 };
@@ -59,11 +75,13 @@ exports.start = async (req, res) => {
 exports.join = async (req, res) => {
   const gameID = req.body;
   let game;
-  try {
-    game = await Game.findById(gameID);
-  } catch (e) {
-    console.log('exports.get');
-    console.log(e);
+  if (gameID) {
+    try {
+      game = await Game.findById(gameID);
+    } catch (e) {
+      console.log('exports.join');
+      console.log(e);
+    }
   }
 
   if (!game) {
@@ -87,7 +105,35 @@ exports.join = async (req, res) => {
   res.send();
 };
 
-exports.leave = (req, res) => {};
+exports.leave = async (req, res) => {
+  const { gameID } = req.body;
+
+  let game;
+  try {
+    game = await Game.findByID(gameID);
+  } catch (e) {
+    console.log('exports.leave');
+    console.log(e);
+  }
+  if (!game) {
+    return res.status(400).send('Game not found!');
+  }
+
+  const playerIdx = game.players.findIndex((p) => p.user === req.user._id);
+  if (playerIdx === -1) {
+    return res.status(400).send("You're not in this game!");
+  }
+
+  if (game.middlecard) {
+    //game has started, lets replace you with a bot by removing your user
+    game.players[playerIdx].user = null;
+  } else {
+    //lets just remove you from the game
+    game.players = game.players.slice(0, playerIdx).concat(game.players.slice(playerIdx + 1));
+  }
+  game.save();
+  res.send(200);
+};
 
 exports.move = async (req, res) => {
   const { gameID } = req.body;
@@ -151,8 +197,12 @@ const startRound = (game) => {
 };
 
 const startBattle = (game) => {
+  game.battleStart = moment();
   game.middlecard = Math.floor(Math.random() * 5 + 1);
   game.players.forEach((p) => (p.played = null));
+  game.players
+    .filter((p) => !p.user)
+    .forEach((p) => (p.played = p.hand[Math.floor(Math.random() * p.hand.length)]));
 };
 
 const checkRoundVictory = (battleWinner) => {
@@ -173,19 +223,20 @@ const getBattleWinner = (game) => {
   const playedCards = game.players.map((p, i) => {
     return { card: p.played, idx: i };
   });
-
   const duplicates = [];
   for (let i = 0; i < playedCards.length; i++) {
     for (let j = i + 1; j < playedCards.length; j++) {
-      if (playedCards[i] === playedCards[j]) {
-        duplicates.push(playedCards[i]);
+      if (playedCards[i].card === playedCards[j].card) {
+        duplicates.push(playedCards[i].card);
       }
     }
   }
-  const playedCardsNoDuplicates = playedCards.filter((card) => !duplicates.includes(card));
+  const playedCardsNoDuplicates = playedCards.filter((item) => !duplicates.includes(item.card));
   if (playedCardsNoDuplicates.length === 0) {
     return null;
   }
+
+  playedCardsNoDuplicates.sort((a, b) => a.card - b.card);
   let battleWinnerIdx;
   if (
     playedCardsNoDuplicates[0].card === 1 &&
@@ -197,6 +248,5 @@ const getBattleWinner = (game) => {
     //OTHERWISE LARGEST NUMBER WINS
     battleWinnerIdx = playedCardsNoDuplicates[playedCardsNoDuplicates.length - 1].idx;
   }
-
   return game.players[battleWinnerIdx];
 };

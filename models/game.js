@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 const GameSchema = new Schema({
   gameover: { type: Boolean, default: false },
   middlecard: { type: Number, min: 1, max: 5 },
+  battleStart: Date,
   players: [
     {
       user: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -27,7 +28,6 @@ GameSchema.methods.toJSON = function () {
   //HIDES OPPONENETS HAND, WHO NEEDS IT
   obj.players.forEach((p) => {
     //delete p.hand;
-    delete p.needsUpdate;
     delete p.played;
   });
   return obj;

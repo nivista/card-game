@@ -2,3 +2,17 @@
   background-color: gray;
   opacity: 50%;
 }
+
+.handCard {
+  margin: 0 1%;
+  height: 100%;
+}
+
+.handCard.active {
+  transform: scale(1.05);
+  box-shadow: 4px 8px black;
+}
+.handCard.active:hover {
+  opacity: 100%;
+  background-color: transparent;
+}

@@ -1,12 +1,8 @@
 import React from 'react';
-import Card from '../../utils/Card';
+import CARDS from '../../utils/cards';
 export default function Middlecard(props) {
   const style = {
     height: '100px',
   };
-  return (
-    <div style={style}>
-      <Card>{props.card}</Card>
-    </div>
-  );
+  return <img style={style} src={CARDS[props.card]} />;
 }

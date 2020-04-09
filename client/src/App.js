@@ -15,7 +15,7 @@ function App() {
   // use hooks to intialize state
   const [gameID, updateGameID] = useState('');
   const [game, updateGame] = useState(null);
-  const [playerID, updatePlayerID] = useState('');
+  const [player, updatePlayer] = useState('');
 
   //const match = document.cookie.match(new RegExp('(^| )connect.sid=([^;]+)'));
   //const sessionID = match && match[2];
@@ -24,19 +24,16 @@ function App() {
   useEffect(() => {
     if (gameID !== '') {
       const interval = setInterval(async () => {
-        console.log(gameID);
         const res = await fetch(url.resolve(SERVER_URL, `game/${gameID}`), {
           credentials: 'include',
         });
-        console.log(res);
         if (res.status === 200) {
           const obj = await res.json();
-          console.log(obj);
-          const stringNewGame = JSON.stringify(obj.game);
-          const stringOldGame = JSON.stringify(game);
-
+          const stringNewGame = JSON.stringify(obj);
+          const stringOldGame = JSON.stringify({ game, player }); //bad because order matters here
           if (stringNewGame !== stringOldGame) {
-            updatePlayerID(obj.playerID); //WHY DO THE ORDER OF THESE MATTER
+            console.log(game);
+            updatePlayer(obj.player); //WHY DO THE ORDER OF THESE MATTER
             updateGame(obj.game);
           }
         } else if (res.status === 400) {
@@ -71,8 +68,7 @@ function App() {
     updateGameID(gameID);
   };
 
-  const props = { ...game, playerID };
-  console.log(game);
+  const props = { ...game, player };
   //cases loading, 1-4 screens
   if (gameID === '') {
     return <Entry updateGameID={updateGameIDAndHistory} joinGame={joinGame} />;
