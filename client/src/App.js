@@ -4,7 +4,7 @@ import url from 'url';
 import hash from 'object-hash';
 
 import Entry from './Entry';
-import Game from './Game';
+import Game from './Game2';
 import Lobby from './Lobby';
 import Summary from './Summary';
 import { SERVER_URL } from './utils/constants';
@@ -32,7 +32,6 @@ function App() {
           const stringNewGame = JSON.stringify(obj);
           const stringOldGame = JSON.stringify({ game, player }); //bad because order matters here
           if (stringNewGame !== stringOldGame) {
-            console.log(game);
             updatePlayer(obj.player); //WHY DO THE ORDER OF THESE MATTER
             updateGame(obj.game);
           }
@@ -68,15 +67,17 @@ function App() {
     updateGameID(gameID);
   };
 
-  const props = { ...game, player };
+  const props = { game, player };
   //cases loading, 1-4 screens
   if (gameID === '') {
     return <Entry updateGameID={updateGameIDAndHistory} joinGame={joinGame} />;
   } else if (game === null) {
     return <p>Loading...</p>;
-  } else if (game.gameover) {
+  }
+  if (game.gameover) {
     return <Summary {...props} />;
-  } else if (!game.middlecard) {
+  }
+  if (!game.middlecard) {
     return <Lobby {...props} />;
   } else {
     return <Game {...props} />;

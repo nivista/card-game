@@ -5,7 +5,7 @@ export default function Summary(props) {
   return (
     <>
       <h2>Summary</h2>
-      <SummaryTable {...props} />
+      <SummaryTable {...props.game} />
     </>
   );
 }

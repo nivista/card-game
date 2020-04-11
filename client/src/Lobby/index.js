@@ -4,13 +4,13 @@ import StartButton from './StartButton';
 
 export default function Lobby(props) {
   // needs players, needs to know current user, and also which player is host
-  const { player, players } = props;
+  const { game, player } = props;
   //are we the current user
   //userID hostID
   return (
     <div>
-      {<LobbyTable {...props} />}
-      {player._id === players[0]._id && <StartButton gameID={props._id} />}
+      {<LobbyTable {...game} />}
+      {player._id === game.players[0]._id && <StartButton gameID={game._id} />}
     </div>
   );
 }

@@ -64,6 +64,13 @@ app.get('/name', function (req, res) {
   res.send(req.user.nickname);
 });
 
+app.post('/name', function (req, res) {
+  req.user.nickname = req.body;
+  req.user.save();
+  res.send();
+  //CONCERN, succssesive saves will cause VERSION ERROR
+});
+
 app.post('/game/new', game.new);
 
 app.post('/game/join', game.join);
