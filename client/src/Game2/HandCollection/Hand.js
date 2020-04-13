@@ -28,12 +28,13 @@ export default function Hand(props) {
   };
 
   return (
-    <div class="hand">
-      {props.hand.map((card) => (
+    <div className="hand">
+      {props.hand.map((card, i) => (
         <img
           src={CARDS[card]}
           className={card === played ? 'played' : undefined}
           onClick={getOnClick(card)}
+          key={i}
         />
       ))}
     </div>

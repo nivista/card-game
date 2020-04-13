@@ -75,7 +75,7 @@ app.post('/game/new', game.new);
 
 app.post('/game/join', game.join);
 
-app.post('game/leave/', game.leave);
+app.post('/game/leave', game.leave);
 
 app.post('/game/start', game.start);
 

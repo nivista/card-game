@@ -1,6 +1,7 @@
 const moment = require('moment');
 
 const Game = require('./models/game');
+const User = require('./models/user');
 const CARDS = require('./utils/cards');
 
 const botsHavePlayed = { data: false };
@@ -17,10 +18,9 @@ exports.get = async (req, res) => {
     return res.status(400).send('Invalid Game ID');
   }
 
-  const populatePlayer = (i) => game.populate(`players.${i}.user`).execPopulate();
-  await Promise.all(game.players.map((p, i) => populatePlayer(i)));
+  await populateUsers(game);
 
-  const player = await game.players.find((p) => p.user.equals(req.user._id));
+  const player = game.players.find((p) => p.user.equals(req.user._id));
   if (!player) {
     return res.status(400).send("You're not playing!");
   }
@@ -106,11 +106,10 @@ exports.join = async (req, res) => {
 };
 
 exports.leave = async (req, res) => {
-  const { gameID } = req.body;
-
+  const gameID = req.body;
   let game;
   try {
-    game = await Game.findByID(gameID);
+    game = await Game.findById(gameID);
   } catch (e) {
     console.log('exports.leave');
     console.log(e);
@@ -119,20 +118,21 @@ exports.leave = async (req, res) => {
     return res.status(400).send('Game not found!');
   }
 
-  const playerIdx = game.players.findIndex((p) => p.user === req.user._id);
+  const playerIdx = game.players.findIndex((p) => p.user.equals(req.user._id));
   if (playerIdx === -1) {
     return res.status(400).send("You're not in this game!");
   }
 
   if (game.middlecard) {
     //game has started, lets replace you with a bot by removing your user
-    game.players[playerIdx].user = null;
+    game.players[playerIdx].user = await new User({ nickname: 'Bot', bot: true });
+    game.players[playerIdx].user.save();
   } else {
     //lets just remove you from the game
     game.players = game.players.slice(0, playerIdx).concat(game.players.slice(playerIdx + 1));
   }
   game.save();
-  res.send(200);
+  res.send();
 };
 
 exports.move = async (req, res) => {
@@ -155,6 +155,8 @@ exports.move = async (req, res) => {
     return res.status(400).send("The game hasn't started");
   }
 
+  await populateUsers(game);
+
   //update state
   player.played = card;
   //did everyone play ? lets advance then
@@ -167,7 +169,7 @@ exports.move = async (req, res) => {
 
 const performMove = (game) => {
   game.players.forEach((p) => (p.lastPlayed = p.played));
-
+  game.summaryInfo.draw = false;
   const battleWinner = getBattleWinner(game);
   if (battleWinner) {
     battleWinner.collected.push(game.middlecard, battleWinner.played);
@@ -176,7 +178,7 @@ const performMove = (game) => {
       .slice(0, playedCardIdx)
       .concat(battleWinner.hand.slice(playedCardIdx + 1));
 
-    if (checkRoundVictory(battleWinner)) {
+    if (checkRoundVictory(battleWinner, game)) {
       battleWinner.points++;
       if (battleWinner.points >= 5) {
         //CHANGE TO POINTS_TO_WIN[players.length] or something
@@ -184,6 +186,13 @@ const performMove = (game) => {
       } else {
         startRound(game);
       }
+    }
+  } else {
+    //check for draw
+    const hands = game.players.map((p) => p.hand);
+    if (hands.every((h) => h.length === 1) && hands.every((h) => h[0] === hands[0][0])) {
+      startRound(game);
+      game.summaryInfo.draw = true;
     }
   }
   startBattle(game);
@@ -201,21 +210,31 @@ const startBattle = (game) => {
   game.middlecard = Math.floor(Math.random() * 5 + 1);
   game.players.forEach((p) => (p.played = null));
   game.players
-    .filter((p) => !p.user)
+    .filter((p) => p.user.bot)
     .forEach((p) => (p.played = p.hand[Math.floor(Math.random() * p.hand.length)]));
 };
 
-const checkRoundVictory = (battleWinner) => {
+const checkRoundVictory = (battleWinner, game) => {
   //CHECK IF THE ROUND IS WON BY DIAMONDS
   let diamonds = battleWinner.collected.reduce((acc, curr) => {
     return acc + CARDS[curr].diamonds;
   }, 0);
-  if (diamonds >= 5) return true;
+  if (diamonds >= 5) {
+    game.summaryInfo.roundWon = false;
+    game.summaryInfo.reason = 'GREATER_THAN_FIVE';
+    return true;
+  }
   //CHECK IF THE ROUND IS ONE BY THREE OF A KIND
   battleWinner.collected.sort();
   for (let i = 0; i < battleWinner.collected.length - 2; i++) {
-    if (battleWinner.collected[i] === battleWinner.collected[i + 2]) return true;
+    if (battleWinner.collected[i] === battleWinner.collected[i + 2]) {
+      game.summaryInfo.roundWon = true;
+      game.summaryInfo.reason = 'GREATER_THAN_FIVE';
+      return true;
+    }
   }
+
+  game.summaryInfo.roundWon = false;
   return false;
 };
 
@@ -249,4 +268,9 @@ const getBattleWinner = (game) => {
     battleWinnerIdx = playedCardsNoDuplicates[playedCardsNoDuplicates.length - 1].idx;
   }
   return game.players[battleWinnerIdx];
+};
+
+const populateUsers = async (game) => {
+  const populatePlayer = (i) => game.populate(`players.${i}.user`).execPopulate();
+  await Promise.all(game.players.map((p, i) => populatePlayer(i)));
 };

@@ -10,7 +10,8 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
-    "svg-url-loader": "^5.0.0"
+    "svg-url-loader": "^5.0.0",
+    "typewriter-effect": "^2.13.0"
   },
   "scripts": {
     "start": "react-scripts start",

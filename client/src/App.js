@@ -74,10 +74,10 @@ function App() {
   } else if (game === null) {
     return <p>Loading...</p>;
   }
+
   if (game.gameover) {
     return <Summary {...props} />;
-  }
-  if (!game.middlecard) {
+  } else if (!game.middlecard) {
     return <Lobby {...props} />;
   } else {
     return <Game {...props} />;

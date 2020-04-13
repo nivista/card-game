@@ -14,10 +14,10 @@ export default function Time(props) {
       if (newTimeLeft !== timeLeft) {
         updateTimeLeft(newTimeLeft);
       }
-    }, 400);
+    }, 200);
     return () => clearInterval(int);
   }, [props.battleStart]);
 
-  let displayTime = `:${timeLeft < 10 && '0'}${timeLeft}`;
-  return <div id="time" value={displayTime}></div>;
+  let displayTime = `:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
+  return <div id="time">{displayTime}</div>;
 }

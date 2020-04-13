@@ -11,6 +11,7 @@ export default function Name(props) {
   }, [props.nickname]);
 
   const updateNicknameAndPost = async (newNickname) => {
+    if (newNickname.length > 10) return;
     updateNickname(newNickname);
     const res = await fetch(url.resolve(SERVER_URL, 'name'), {
       credentials: 'include',

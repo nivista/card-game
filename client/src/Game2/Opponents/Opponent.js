@@ -1,7 +1,7 @@
 import React from 'react';
 import CARDS from '../../utils/cards';
+
 export default function Opponent(props) {
-  console.log(props.collected);
   return (
     <div>
       <div className="nickname">{props.user.nickname}</div>

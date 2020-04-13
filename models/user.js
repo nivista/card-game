@@ -5,7 +5,8 @@ const Schema = mongoose.Schema
 
 const UserSchema = new Schema({
   sessionID: String,
-  nickname: String
+  nickname: String,
+  bot: {type: Boolean, default: false}
 })
 
 UserSchema.methods.setNickname = function(){

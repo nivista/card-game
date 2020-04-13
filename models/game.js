@@ -7,6 +7,11 @@ const GameSchema = new Schema({
   gameover: { type: Boolean, default: false },
   middlecard: { type: Number, min: 1, max: 5 },
   battleStart: Date,
+  summaryInfo: {
+    roundWon: { type: Boolean, default: false },
+    reason: { type: String, enum: ['THREE_OF_A_KIND', 'GREATER_THAN_FIVE'] },
+    draw: { type: Boolean, default: false },
+  },
   players: [
     {
       user: { type: Schema.Types.ObjectId, ref: 'User' },
