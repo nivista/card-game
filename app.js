@@ -77,6 +77,10 @@ app.post('/game/join', game.join);
 
 app.post('/game/leave', game.leave);
 
+app.post('/game/addBot', game.addBot);
+
+app.post('/game/removePlayer', game.removePlayer);
+
 app.post('/game/start', game.start);
 
 // get gamestate

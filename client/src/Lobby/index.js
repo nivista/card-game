@@ -1,16 +1,19 @@
 import React from 'react';
-import LobbyTable from './LobbyTable';
-import StartButton from './StartButton';
+import Header from './Header';
+import LobbyControl from './LobbyControl';
+import Rules from './Rules';
+import './style.css';
 
 export default function Lobby(props) {
-  // needs players, needs to know current user, and also which player is host
-  const { game, player } = props;
-  //are we the current user
-  //userID hostID
+  const { players, gameID, player } = props;
+  let isHost = players[0]._id === player._id;
+
+  const playersExcludeSelf = players.filter((p) => p._id !== player._id);
   return (
-    <div>
-      {<LobbyTable {...game} />}
-      {player._id === game.players[0]._id && <StartButton gameID={game._id} />}
+    <div className="container" id="lobby">
+      <Header nickname={player.user.nickname} gameID={gameID} />
+      <LobbyControl players={playersExcludeSelf} isHost={isHost} gameID={gameID} />
+      <Rules />
     </div>
   );
 }

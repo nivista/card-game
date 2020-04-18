@@ -1,0 +1,31 @@
+#lobby {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-rows: 15% 85%;
+
+  font-size: 15pt;
+  background-color: #f4f3ee;
+  padding: 10px;
+}
+
+#lobby .header {
+  grid-column: 1 / 3;
+  grid-row: 1 / 2;
+
+  font-size: 30pt;
+  text-align: center;
+  align-content: center;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 100px;
+}
+
+#lobby .header div {
+  align-self: center;
+}
+
+#lobby .rules {
+  padding: 10px 0px;
+  line-height: 1.5em;
+  list-style: inside;
+}

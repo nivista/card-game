@@ -1,35 +1,22 @@
-import React, { useState } from 'react';
-import url from 'url';
-import { SERVER_URL } from '../utils/constants';
-export default function (props) {
-  //props joinGame - param gameID
-  //props startGame - return gameID
-  const [gameIDForm, setGameIDForm] = useState('');
-  const [createdGameID, setCreatedGameID] = useState('');
+import React from 'react';
+import Name from '../utils/Name';
+import { postNewGame } from '../utils/request';
 
-  const newGame = async () => {
-    const resp = await fetch(url.resolve(SERVER_URL, 'game/new'), {
-      method: 'POST',
-      credentials: 'include',
-    });
-    let gameID = await resp.text();
-    gameID = gameID.slice(1, -1);
-    setCreatedGameID(gameID);
+export default function Entry(props) {
+  const { nickname, updateGameID } = props;
+
+  const startGame = async () => {
+    const res = await postNewGame();
+    const gameID = (await res.text()).slice(1, -1);
+    updateGameID(gameID);
   };
-
   return (
-    <>
-      <p>Someone sent me an ID and I want to join a game! (Or rejoin)</p>
-      <input value={gameIDForm} onChange={(e) => setGameIDForm(e.target.value)}></input>
-      <button onClick={() => props.joinGame(gameIDForm)}>Join Game</button>
-      <p>Let's make a new game!</p>
-      <button onClick={newGame}>Create Game</button>
-      {createdGameID && (
-        <>
-          <p>Created Game ID: {createdGameID}</p>
-          <button onClick={() => props.updateGameID(createdGameID)}>Join Created Game</button>
-        </>
-      )}
-    </>
+    <div className="container" id="entry">
+      <div>
+        <Name nickname={nickname || ''} />!
+      </div>
+      <div>Welcome!</div>
+      <button onClick={startGame}>Click me to start a game!</button>
+    </div>
   );
 }

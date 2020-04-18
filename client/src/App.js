@@ -1,86 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import url from 'url';
-import hash from 'object-hash';
 
 import Entry from './Entry';
-import Game from './Game2';
+import Game from './Game';
 import Lobby from './Lobby';
-import Summary from './Summary';
-import { SERVER_URL } from './utils/constants';
+import { postJoinGame, getGame, getNickname } from './utils/request';
 
-//let rerenderCount = 0;
 function App() {
-  //console.log(++rerenderCount);
-  // use hooks to intialize state
   const [gameID, updateGameID] = useState('');
   const [game, updateGame] = useState(null);
-  const [player, updatePlayer] = useState('');
+  const [player, updatePlayer] = useState(null);
+  const [nickname, updateNickname] = useState(null);
 
-  //const match = document.cookie.match(new RegExp('(^| )connect.sid=([^;]+)'));
-  //const sessionID = match && match[2];
-
-  //loads gameState
   useEffect(() => {
     if (gameID !== '') {
       const interval = setInterval(async () => {
-        const res = await fetch(url.resolve(SERVER_URL, `game/${gameID}`), {
-          credentials: 'include',
-        });
-        if (res.status === 200) {
+        const res = await getGame(gameID);
+        if (res.status === 200 || res.status === 204) {
           const obj = await res.json();
           const stringNewGame = JSON.stringify(obj);
           const stringOldGame = JSON.stringify({ game, player }); //bad because order matters here
           if (stringNewGame !== stringOldGame) {
             updatePlayer(obj.player); //WHY DO THE ORDER OF THESE MATTER
             updateGame(obj.game);
+            updateNickname(obj.player.user.nickname);
           }
         } else if (res.status === 400) {
-          updateGameID('');
+          updateGameIDAndHistory('');
         }
       }, 1000);
 
       return () => clearInterval(interval);
+    } else {
+      (async function () {
+        updateNickname(await getNickname());
+      })();
     }
-  }, [gameID, game]);
+  }, [gameID, game, player]);
 
   useEffect(() => {
-    updateGameID(window.location.pathname.substring(1)); //TODO WHERE EXACTLY SHOULD I DO THIS:: THIS SAYS DO ONCE
     joinGame(window.location.pathname.substring(1));
   }, []);
 
   const joinGame = async (gameID) => {
-    const res = await fetch(url.resolve(SERVER_URL, 'game/join/'), {
-      method: 'POST',
-      credentials: 'include',
-      body: gameID,
-    });
-    if (res.status != 400) {
+    const res = await postJoinGame(gameID);
+    if (res.status === 200 || res.status === 204) {
       updateGameID(gameID);
     } else {
-      //TODO:: ERROR
+      window.history.pushState(null, '', '/');
     }
   };
 
   const updateGameIDAndHistory = (gameID) => {
-    window.history.replaceState(null, '', gameID);
+    window.history.replaceState(null, '', gameID || '/');
+    updateGame(null);
     updateGameID(gameID);
   };
 
-  const props = { game, player };
-  //cases loading, 1-4 screens
   if (gameID === '') {
-    return <Entry updateGameID={updateGameIDAndHistory} joinGame={joinGame} />;
+    return <Entry updateGameID={updateGameIDAndHistory} nickname={nickname} />;
   } else if (game === null) {
     return <p>Loading...</p>;
   }
 
-  if (game.gameover) {
-    return <Summary {...props} />;
-  } else if (!game.middlecard) {
-    return <Lobby {...props} />;
+  if (!game.battleStart) {
+    return <Lobby players={game.players} gameID={game._id} player={player} />;
   } else {
-    return <Game {...props} />;
+    return <Game game={game} player={player} />;
   }
 }
 

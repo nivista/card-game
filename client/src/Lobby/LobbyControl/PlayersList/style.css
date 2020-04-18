@@ -1,0 +1,26 @@
+.player {
+  justify-content: space-between;
+  width: 50%;
+  padding: 5px 5px 5px 0px;
+}
+
+.player button {
+  border: none;
+  box-shadow: 0px 0px 2px 2px gray;
+}
+.player button:active {
+  transform: scale(1.05);
+  background-color: gray;
+}
+.player button:hover {
+  transform: scale(1.05);
+}
+.playersList {
+  line-height: 1.5em;
+  padding-left: 0px;
+}
+
+.emptyPlayersList {
+  padding-left: 5px;
+  line-height: 2em;
+}

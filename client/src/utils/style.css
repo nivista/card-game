@@ -1,0 +1,11 @@
+#nicknameForm {
+  align-self: center;
+  justify-self: left;
+  border: 1px black solid;
+  padding: 15px;
+  font-size: 30pt;
+  width: calc(100% - 50px);
+  display: inline;
+  border-radius: 10px;
+  border: none;
+}

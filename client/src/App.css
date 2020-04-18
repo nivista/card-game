@@ -1,5 +1,4 @@
 body {
-  text-align: center;
   padding-top: 40px;
   background-color: lightblue;
   height: 100%;
@@ -10,14 +9,10 @@ body {
 }
 
 .container {
-  display: grid;
   height: 90%;
   width: 800px;
   min-height: 500px;
   margin: 0 auto;
-  grid-template-columns: 1fr 1fr 200px;
-  grid-template-rows: 15% 15% 50% 20%;
-
   background-color: #f4f3ee;
   padding: 10px;
 }

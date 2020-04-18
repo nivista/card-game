@@ -3,7 +3,7 @@ const moment = require('moment');
 const Game = require('./models/game');
 const User = require('./models/user');
 const CARDS = require('./utils/cards');
-
+const TURN_TIME = 20;
 const botsHavePlayed = { data: false };
 exports.get = async (req, res) => {
   let game;
@@ -27,7 +27,7 @@ exports.get = async (req, res) => {
   if (game.middlecard && !game.gameover && !botsHavePlayed.data) {
     // battle has started
     const timeElapsed = moment().diff(moment(game.battleStart), 'seconds');
-    const timeLeft = 10 - timeElapsed;
+    const timeLeft = TURN_TIME - timeElapsed;
     if (timeLeft < 0 && !game.players.every((p) => p.played)) {
       //bots move
       game.players
@@ -46,8 +46,8 @@ exports.get = async (req, res) => {
   res.send({ game, player });
 };
 
-exports.new = async (req, res) => {
-  const game = await new Game();
+exports.new = (req, res) => {
+  const game = new Game();
   game.players.push({ user: req.user._id });
   game.save();
   res.send(game._id);
@@ -66,10 +66,11 @@ exports.start = async (req, res) => {
     return res.status(400).send("You're not the host");
   }
 
+  await populateUsers(game);
   startRound(game);
   startBattle(game);
   game.save();
-  res.send({ status: 'starting' });
+  res.send();
 };
 
 exports.join = async (req, res) => {
@@ -87,14 +88,14 @@ exports.join = async (req, res) => {
   if (!game) {
     return res.status(400).send("Couldn't find this game");
   }
-  if (game.middlecard) {
-    return res.status(400).send('Game has started');
-  }
-
   const players = game.players;
   if (players.map((p) => p.user).includes(req.user._id)) {
     return res.status(204).send("You're already playing this game");
   }
+  if (game.middlecard) {
+    return res.status(400).send('Game has started');
+  }
+
   if (players.length > 5) {
     return res.status(400).send('Lobby is full');
   }
@@ -125,12 +126,49 @@ exports.leave = async (req, res) => {
 
   if (game.middlecard) {
     //game has started, lets replace you with a bot by removing your user
-    game.players[playerIdx].user = await new User({ nickname: 'Bot', bot: true });
-    game.players[playerIdx].user.save();
+    const newUser = new User({ bot: true });
+    game.players[playerIdx].user = newUser;
+    newUser.setNickname();
+    newUser.save();
   } else {
     //lets just remove you from the game
     game.players = game.players.slice(0, playerIdx).concat(game.players.slice(playerIdx + 1));
   }
+  game.save();
+  res.send();
+};
+
+exports.addBot = async (req, res) => {
+  //TODO::ADD VALIDATORS SO THIS DOESNT MESS UP IF CALLED TWICE
+  const gameID = req.body;
+  const game = await Game.findById(gameID);
+  if (!game) {
+    return res.status(400).send('Game not found!');
+  }
+  if (game.players.length > 4) {
+    return res.status(400).send('Game capacity full!');
+  }
+  const user = new User({ bot: true });
+  user.setNickname();
+  user.save();
+  game.players.push({ user: user._id });
+  game.save();
+  res.send();
+};
+
+exports.removePlayer = async (req, res) => {
+  const { gameID, playerID } = req.body;
+  const game = await Game.findById(gameID);
+
+  if (!game) {
+    return res.status(400).send('Game not found!');
+  }
+  const idx = game.players.findIndex((p) => p._id.equals(playerID));
+  if (idx === -1) {
+    return res.status(400).send('Player not found!');
+  }
+
+  game.players = game.players.slice(0, idx).concat(game.players.slice(idx + 1));
   game.save();
   res.send();
 };
@@ -220,7 +258,7 @@ const checkRoundVictory = (battleWinner, game) => {
     return acc + CARDS[curr].diamonds;
   }, 0);
   if (diamonds >= 5) {
-    game.summaryInfo.roundWon = false;
+    game.summaryInfo.roundWon = true;
     game.summaryInfo.reason = 'GREATER_THAN_FIVE';
     return true;
   }
@@ -229,7 +267,7 @@ const checkRoundVictory = (battleWinner, game) => {
   for (let i = 0; i < battleWinner.collected.length - 2; i++) {
     if (battleWinner.collected[i] === battleWinner.collected[i + 2]) {
       game.summaryInfo.roundWon = true;
-      game.summaryInfo.reason = 'GREATER_THAN_FIVE';
+      game.summaryInfo.reason = 'THREE_OF_A_KIND';
       return true;
     }
   }
